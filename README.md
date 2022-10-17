@@ -2,6 +2,8 @@
 
 Example Nexus as Code Configuration files for setting up ACI in a "VRF sandwich" for firewall integration
 
+See [Nexus as Code](https://developer.cisco.com/docs/nexus-as-code/) for the full documentation.
+
 ## Quick Start
 
 - `git clone https://github.com/conmurphy/aci-vrf-sandwich.git`
