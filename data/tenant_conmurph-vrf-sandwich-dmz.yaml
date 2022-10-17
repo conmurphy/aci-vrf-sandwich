@@ -1,0 +1,118 @@
+---
+apic:
+  tenants:
+    - name: conmurph-vrf-sandwich-dmz
+
+      vrfs:
+        - name: dmz
+
+      bridge_domains: 
+        - name: 192.168.10.0
+          vrf: dmz
+          l3outs: 
+            - to-fw-dmz
+          subnets: 
+          - ip: 192.168.10.254/24 
+            public: true
+            private: false     
+
+      application_profiles:
+        - name: dmz
+          endpoint_groups:
+            - name: 192.168.10.0
+              bridge_domain: 192.168.10.0
+              contracts:
+                consumers:
+                  - firewall-to-dmz
+              vmware_vmm_domains:
+                - name: DM_VMM
+                  delimiter: '|'
+                  deployment_immediacy: immediate
+                  resolution_immediacy: immediate
+
+      filters:
+        - name: icmp
+          entries:
+            - name: icmp
+              ethertype: ip
+              protocol: icmp
+        - name: web
+          entries:
+            - name: http
+              ethertype: ip
+              protocol: tcp
+              destination_from_port: http
+              destination_to_port: http
+
+      contracts:
+        - name: firewall-to-dmz
+          subjects:
+            - name: icmp
+              filters:
+                - filter: icmp
+            - name: web
+              filters:
+                - filter: web
+      
+      policies:
+        ospf_interface_policies:
+          - name: ospf-broadcast
+            network_type: bcast
+
+      l3outs:
+        - name: to-fw-dmz
+          vrf: dmz
+          domain: L3_FI
+          ospf:
+            area: backbone
+            area_type: regular
+            area_cost: 1
+            auth_type: none
+            policy: ospf-broadcast
+            ospf_interface_profile_name: ospf-broadcast
+          node_profiles: 
+            - name: to-fw-dmz_nodeProfile
+              nodes:
+                - node_id: 101
+                  router_id: 98.98.98.101
+                  router_id_as_loopback: false
+                - node_id: 102
+                  router_id: 98.98.98.102
+                  router_id_as_loopback: false                
+              interface_profiles:
+                - name: to-fw-dmz
+                  ospf:
+                    area: backbone
+                    area_type: regular
+                    area_cost: 1
+                    auth_type: none
+                    policy: ospf-broadcast
+                    ospf_interface_profile_name: ospf-broadcast
+                  interfaces:  
+                    - channel: LPG_FI-A
+                      node_id: 101
+                      node2_id: 102
+                      svi: true
+                      vlan: 998
+                      ip_a: 172.16.10.1/24
+                      ip_b: 172.16.10.2/24
+                      ip_shared: 172.16.10.3/24
+                      mtu: 1500
+                    - channel: LPG_FI-B
+                      node_id: 101
+                      node2_id: 102
+                      svi: true
+                      vlan: 998
+                      ip_a: 172.16.10.1/24
+                      ip_b: 172.16.10.2/24
+                      ip_shared: 172.16.10.3/24
+                      mtu: 1500
+          external_endpoint_groups:
+            - name: to-firewall
+              subnets:
+                - name: all
+                  prefix: 0.0.0.0/0
+              contracts:
+                providers:
+                  - firewall-to-dmz
+            
